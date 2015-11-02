@@ -1,0 +1,72 @@
+root@raspberrypi:/home/bobAdmin# iptables -L
+Chain INPUT (policy DROP)
+target     prot opt source               destination
+ACCEPT     all  --  anywhere             anywhere             state RELATED,ESTABLISHED
+ACCEPT     tcp  --  anywhere             anywhere             tcp dpt:ssh
+ACCEPT     all  --  anywhere             anywhere
+CHECK_TCP_FLAGS  tcp  --  anywhere             anywhere
+ACCEPT     udp  --  192.168.21.0/24      anywhere             udp spts:bootps:bootpc dpts:bootps:bootpc
+ACCEPT     udp  --  192.168.21.0/24      192.168.1.3          udp spts:1024:65535 dpt:domain
+ACCEPT     tcp  --  192.168.21.0/24      192.168.1.3          tcp spts:1024:65535 dpt:domain
+ACCEPT     icmp --  192.168.21.0/24      192.168.1.3          icmp echo-request
+ACCEPT     icmp --  192.168.21.0/24      192.168.1.3          icmp destination-unreachable
+ACCEPT     tcp  -- !192.168.21.0/24      192.168.1.3          state RELATED,ESTABLISHED
+ACCEPT     udp  -- !192.168.21.0/24      192.168.1.3          state RELATED,ESTABLISHED
+ACCEPT     icmp -- !192.168.21.0/24      192.168.1.3          state RELATED,ESTABLISHED
+LOG        all  --  anywhere             anywhere             limit: avg 1/sec burst 5 LOG level warning prefix "[IPTABLES: INPUT DROP]"
+DROP       all  --  anywhere             anywhere
+
+Chain FORWARD (policy DROP)
+target     prot opt source               destination
+CHECK_TCP_FLAGS  tcp  --  anywhere             anywhere
+ACCEPT     tcp  --  192.168.21.0/24     !192.168.21.0/24      state NEW,RELATED,ESTABLISHED
+ACCEPT     udp  --  192.168.21.0/24     !192.168.21.0/24      state NEW,RELATED,ESTABLISHED
+ACCEPT     icmp --  192.168.21.0/24     !192.168.21.0/24      state NEW,RELATED,ESTABLISHED
+ACCEPT     tcp  -- !192.168.21.0/24      192.168.21.0/24      state RELATED,ESTABLISHED TTL match TTL > 10
+ACCEPT     udp  -- !192.168.21.0/24      192.168.21.0/24      state RELATED,ESTABLISHED TTL match TTL > 10
+ACCEPT     icmp -- !192.168.21.0/24      192.168.21.0/24      state RELATED,ESTABLISHED TTL match TTL > 10
+LOG        all  --  anywhere             anywhere             limit: avg 1/sec burst 5 LOG level warning prefix "[IPTABLES: FORWARD DROP]"
+DROP       all  --  anywhere             anywhere
+
+Chain OUTPUT (policy DROP)
+target     prot opt source               destination
+ACCEPT     all  --  anywhere             anywhere             state RELATED,ESTABLISHED
+ACCEPT     tcp  --  anywhere             anywhere             tcp spt:ssh
+ACCEPT     all  --  anywhere             anywhere
+LOG        icmp --  anywhere             anywhere             icmp redirect limit: avg 1/sec burst 5 LOG level warning prefix "[IPTABLES: ICMP REDIRECT]"
+DROP       icmp --  anywhere             anywhere             icmp redirect
+ACCEPT     tcp  --  192.168.1.3          192.168.21.0/24      state RELATED,ESTABLISHED
+ACCEPT     udp  --  192.168.1.3          192.168.21.0/24      state RELATED,ESTABLISHED
+ACCEPT     icmp --  192.168.1.3          192.168.21.0/24      state RELATED,ESTABLISHED
+ACCEPT     udp  --  192.168.1.3          192.168.21.0/24      udp spts:bootps:bootpc dpts:bootps:bootpc
+ACCEPT     icmp --  192.168.1.3          192.168.21.0/24      icmp echo-request state NEW
+ACCEPT     tcp  --  192.168.1.3         !192.168.21.0/24      state NEW,RELATED,ESTABLISHED
+ACCEPT     udp  --  192.168.1.3         !192.168.21.0/24      state NEW,RELATED,ESTABLISHED
+ACCEPT     icmp --  192.168.1.3         !192.168.21.0/24      state NEW,RELATED,ESTABLISHED
+ACCEPT     udp  --  192.168.1.3          8.8.8.8              udp spts:1024:65535 dpt:domain
+ACCEPT     udp  --  192.168.1.3          208.67.222.222       udp spts:1024:65535 dpt:domain
+ACCEPT     tcp  --  192.168.1.3          8.8.8.8              tcp spts:1024:65535 dpt:domain
+ACCEPT     tcp  --  192.168.1.3          208.67.222.222       tcp spts:1024:65535 dpt:domain
+ACCEPT     udp  --  192.168.1.3          anywhere             udp dpt:ntp
+LOG        all  --  anywhere             anywhere             limit: avg 1/sec burst 5 LOG level warning prefix "[IPTABLES: OUTPUT DROP]"
+DROP       all  --  anywhere             anywhere
+
+Chain CHECK_TCP_FLAGS (2 references)
+target     prot opt source               destination
+LOGDROP_TCP_FLAGS  tcp  --  anywhere             anywhere             tcpflags: FIN,ACK/FIN
+LOGDROP_TCP_FLAGS  tcp  --  anywhere             anywhere             tcpflags: PSH,ACK/PSH
+LOGDROP_TCP_FLAGS  tcp  --  anywhere             anywhere             tcpflags: ACK,URG/URG
+LOGDROP_TCP_FLAGS  tcp  --  anywhere             anywhere             tcpflags: FIN,RST/FIN,RST
+LOGDROP_TCP_FLAGS  tcp  --  anywhere             anywhere             tcpflags: FIN,SYN/FIN,SYN
+LOGDROP_TCP_FLAGS  tcp  --  anywhere             anywhere             tcpflags: SYN,RST/SYN,RST
+LOGDROP_TCP_FLAGS  tcp  --  anywhere             anywhere             tcpflags: FIN,SYN,RST,PSH,ACK,URG/FIN,SYN,RST,PSH,ACK,URG
+LOGDROP_TCP_FLAGS  tcp  --  anywhere             anywhere             tcpflags: FIN,SYN,RST,PSH,ACK,URG/NONE
+LOGDROP_TCP_FLAGS  tcp  --  anywhere             anywhere             tcpflags: FIN,SYN,RST,PSH,ACK,URG/FIN,PSH,URG
+LOGDROP_TCP_FLAGS  tcp  --  anywhere             anywhere             tcpflags: FIN,SYN,RST,PSH,ACK,URG/FIN,SYN,PSH,URG
+LOGDROP_TCP_FLAGS  tcp  --  anywhere             anywhere             tcpflags: FIN,SYN,RST,PSH,ACK,URG/FIN,SYN,RST,ACK,URG
+
+Chain LOGDROP_TCP_FLAGS (11 references)
+target     prot opt source               destination
+LOG        all  --  anywhere             anywhere             limit: avg 1/sec burst 5 LOG level warning tcp-options prefix "[IPTABLES: BAD TCP FLAGS]"
+DROP       all  --  anywhere             anywhere
+root@raspberrypi:/home/bobAdmin#
